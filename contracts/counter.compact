@@ -1,0 +1,20 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+/*
+ * Privacy model:
+ * - count is public ledger state and is visible on-chain.
+ * - secretValue is a private witness supplied by the caller.
+ * - the circuit proves the witness is the expected increment without
+ *   disclosing the witness; only the new public count is disclosed.
+ */
+witness secretValue(): Uint<32>;
+
+export ledger count: Uint<32>;
+
+export circuit increment(expectedSecret: Uint<32>): [] {
+    const privateSecret = secretValue();
+    assert(privateSecret == expectedSecret);
+    count = disclose(count + 1);
+}

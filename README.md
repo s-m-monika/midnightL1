@@ -1,263 +1,246 @@
-# Midnight Counter
+# PayPilot
 
-> A privacy-preserving counter that proves a private witness while keeping the public count on-chain.
+### An AI agent that selects tools, pays for APIs, and keeps working
 
-## Contract Address
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
+[![viem](https://img.shields.io/badge/viem-Base%20Sepolia-0052FF)](https://viem.sh/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-| Network | Address |
-|---|---|
-| Preview | `[PASTE ADDRESS AFTER DEPLOY]` |
-| Preprod | `[PASTE ADDRESS AFTER DEPLOY]` |
+PayPilot is an autonomous AI agent powered by Google Gemini. It chooses the right tool for each question and can pay a paid API from its own crypto wallet using the x402 pay-per-request pattern.
 
-## What This Does
+**Live demo:** [agentmax1.netlify.app](https://agentmax1.netlify.app/)<br />
+**Source code:** [github.com/s-m-monika/midnightL1](https://github.com/s-m-monika/midnightL1)
 
-The counter contract increments public ledger state only after the caller supplies a private witness matching the expected value. The witness is checked inside the circuit and is not written to public state.
+---
 
-## Privacy Model
+## Table of Contents
 
-- What is PUBLIC (on-chain, visible to anyone): the `count` ledger value and the disclosed result of each increment.
-- What is PRIVATE (private witness, never on-chain): the value returned by `secretValue()`.
-- What the user PROVES without revealing: that their private witness equals the circuit input expected by the transaction.
+1. [About the Project](#1-about-the-project)
+2. [Features](#2-features)
+3. [Tech Stack](#3-tech-stack)
+4. [Installation](#4-installation)
+5. [Usage](#5-usage)
+6. [Environment Variables](#6-environment-variables)
+7. [Project Structure](#7-project-structure)
+8. [Future Improvements](#8-future-improvements)
+9. [Team Members](#9-team-members)
+10. [Contributing](#10-contributing)
+11. [License](#11-license)
 
-## Tech Stack
+---
 
-- Midnight network, Compact language, Node.js v22, Docker
+## 1. About the Project
 
-## Prerequisites
+AI agents become more useful when they can access real services, but paid APIs traditionally require a person to create accounts, manage subscriptions, and provide API keys. PayPilot gives the agent its own testnet wallet so it can respond to an HTTP `402 Payment Required` response, sign a payment, and retry the request automatically.
 
-Node.js 22, Docker Desktop with Compose v2, WSL on Windows, npm, and access to a funded Midnight Preview or Preprod wallet for public deployment.
+This demonstrates a practical path toward pay-per-use agent systems while keeping the payment flow transparent and non-custodial for the demo. No real money moves: payments are signed messages verified by the API, not on-chain transactions.
 
-## Setup
+## 2. Features
+
+- **Autonomous tool use** — Gemini reads tool descriptions and can chain up to five tool calls to answer a single question.
+- **Agent-owned wallet** — Create a wallet on the Base Sepolia testnet directly from the Setup panel.
+- **x402 payments** — The weather API requires a signed `0.01 USDC` payment before returning data; the agent handles the full 402 → sign → retry loop on its own.
+- **Five built-in tools:**
+  - `get_weather` — paid weather lookup for any city
+  - `get_my_wallet` — shows the agent's wallet address and balance
+  - `roll_dice` — rolls a die with any number of sides
+  - `get_joke` — fetches a joke from the Official Joke API
+  - `get_country_info` — returns a country's capital and population
+- **Automatic model fallback** — switches to another Gemini model when the preferred one returns a `404`, `429`, or `503`, and remembers the working model.
+- **Transparent execution** — expandable tool cards show each tool's input, output, and payment receipt.
+- **Conversation memory** — continue asking follow-up questions in the same chat.
+- **Hosting-ready API route** — consistent JSON errors and a 60-second agent execution window.
+- **Easy to extend** — add a new tool by defining a single object in `agent/tools.ts`.
+
+## 3. Tech Stack
+
+| Category | Technology |
+| --- | --- |
+| Language | TypeScript |
+| Framework | Next.js 16 (App Router, API routes) |
+| UI | React 19, Tailwind CSS 4, Base UI, shadcn/ui, Lucide icons |
+| AI | Google Gemini via `@google/genai` function calling |
+| Blockchain | viem on Base Sepolia testnet |
+| Payment protocol | x402-style HTTP `402 Payment Required` + signed `X-PAYMENT` headers |
+| External APIs | Official Joke API, CountriesNow |
+| Hosting | Netlify |
+| Tooling | Node.js 20+, npm, Git, GitHub |
+
+## 4. Installation
+
+### Prerequisites
+
+- Node.js 20 or newer
+- npm
+- A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
+
+### Steps
 
 ```bash
+git clone https://github.com/s-m-monika/midnightL1.git
+cd midnightL1
 npm install
-npm run compile
-npm test
 ```
 
-Start the local services with `npm run proof-server:start`, or use `npm run setup -- --network preview` for the scaffolded end-to-end flow.
-
-## Run Tests
+Create your environment file:
 
 ```bash
-npm test
+# macOS/Linux
+cp .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
 ```
 
-## Initial Idea
+Add your Gemini API key to `.env` (see [Environment Variables](#6-environment-variables)).
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
-
-## Screenshots
-
-[LEAVE PLACEHOLDER — I will add compile output and contract address screenshots]
-
-A Midnight Network smart contract scaffolded with create-mn-app.
-
-## Quick start
-
-Requirements: Node 22, Docker (with Compose v2), and the Compact compiler at the version pinned in `.compact-version` at the create-mn-app repo root (the version this project was scaffolded against).
-
-> **On Windows:** the npm scripts in this project run natively (PowerShell or cmd.exe), but the Compact compiler publishes no native Windows binary — so `npm run compile`, and `npm run setup` which calls it, need to run inside WSL. See Midnight's [installation docs](https://docs.midnight.network/getting-started/installation).
+Start the development server:
 
 ```bash
-npm install
-npm run setup
-npm run test:e2e
+npm run dev
 ```
 
-`npm run setup` runs end-to-end with no prompts:
+Open [http://localhost:3000](http://localhost:3000), click **Create wallet** in the Setup panel, and start chatting.
 
-1. `docker compose up -d --wait` — starts a local Midnight devnet (node, indexer, proof-server) and blocks until all three pass their healthchecks.
-2. `npm run compile` — compiles `contracts/hello-world.compact` to `contracts/managed/hello-world/`.
-3. `npm run deploy` — derives the genesis-seed wallet (NIGHT pre-minted), registers UTXOs for DUST generation, deploys the contract, writes `.midnight-state.json`.
-
-`npm run test:e2e` reconnects to the deployed contract and reads its ledger state. Exits 0 if the contract is live and indexable.
-
-## Local devnet
-
-The project ships its own devnet via `docker-compose.yml`:
-
-| Service        | Port | Purpose                                         |
-| -------------- | ---- | ----------------------------------------------- |
-| `node`         | 9944 | Midnight node, `dev` chain preset               |
-| `indexer`      | 8088 | GraphQL indexer for chain state                 |
-| `proof-server` | 6300 | Generates ZK proofs for contract transactions   |
-
-State lives in container-managed volumes. Tear everything down with:
+### Production build
 
 ```bash
-docker compose down -v
+npm run build
+npm run start
 ```
 
-That removes all containers, networks, and volumes. The next `npm run setup` starts from a clean slate.
+### Deploy to Netlify
 
-## ⚠️ LOCAL DEVNET ONLY
+1. Import the repository at [netlify.com](https://www.netlify.com/).
+2. Add `GEMINI_API_KEY`, `GEMINI_MODEL`, and `WALLET_PRIVATE_KEY` under **Site configuration → Environment variables**.
+3. Deploy the site.
 
-The deploy script uses a well-known genesis seed (`0000…0001`) so the
-pre-minted NIGHT in the `dev` chain preset is immediately available. **Do
-not use this seed against Preprod, mainnet, or any environment that
-handles real value** — anyone running this devnet has full access to
-funds at this seed.
+> Never commit `.env` or `.agent-wallet.json`. Use test wallets and testnet funds only.
 
-## Networks
+## 5. Usage
 
-This DApp supports three networks:
+Try the live application at **[agentmax1.netlify.app](https://agentmax1.netlify.app/)**.
 
-| Network | When to use | Default? |
-|---|---|---|
-| `undeployed` | Local devnet bundled in `docker-compose.yml`. Genesis seed is hardcoded; no funding needed. | yes |
-| `preview` | Public preview testnet. Faucet at `https://midnight-tmnight-preview.nethermind.dev`. |  |
-| `preprod` | Public preprod testnet. Faucet at `https://midnight-tmnight-preprod.nethermind.dev`. |  |
+| Prompt | Expected behavior |
+| --- | --- |
+| "What's the weather in Mumbai?" | Pays `0.01 USDC` through the demo flow and returns weather data. |
+| "What's in your wallet?" | Shows the agent's wallet address and balance. |
+| "Roll a 20-sided dice." | Calls the local dice tool. |
+| "Tell me a joke." | Fetches a joke from the Official Joke API. |
+| "What's the capital of India?" | Returns country information, including capital and population. |
 
-The active network is **sticky**: whichever network you last interacted
-with stays active until you switch. Any command run with `--network <name>`
-also sets that network active for subsequent commands. The default on a
-fresh project is `undeployed` (local devnet).
+Each tool call appears as an expandable card in the chat. Paid calls include a **PAID 0.01 USDC** badge and a payment receipt.
 
-```sh
-npm run setup -- --network preview   # runs on preview AND makes it active
-npm run cli                          # still uses preview
-npm run check-balance                # still uses preview
+### How it works
+
+1. The user submits a message from the chat UI to `/api/agent`.
+2. The agent sends the conversation and tool definitions to Gemini.
+3. Gemini either returns a final response or requests a tool call.
+4. PayPilot executes the tool and sends the result back to Gemini (up to five rounds).
+5. When the paid weather API returns `402 Payment Required`, the agent's wallet signs the requested payment.
+6. PayPilot retries the request with an `X-PAYMENT` header.
+7. The API verifies the signature and returns the result.
+8. The UI renders the final answer, tool inputs, outputs, and payment details.
+
+```mermaid
+flowchart LR
+    User[User] --> UI[Next.js Chat UI]
+    UI --> Agent[POST /api/agent<br/>Agent loop]
+    Agent <-->|Function calling<br/>model fallback| Gemini[Google Gemini]
+    Agent --> Tools[Built-in tools]
+    Tools --> Joke[Official Joke API]
+    Tools --> Country[CountriesNow API]
+    Tools --> Dice[Local dice tool]
+    Tools --> Wallet[Agent wallet<br/>viem]
+    Wallet -->|Signed X-PAYMENT| Weather[Paid weather API<br/>/api/weather]
+    Wallet --> Base[Base Sepolia]
+    Agent --> UI
 ```
 
-You can also switch without running anything else:
-
-```sh
-npm run network preview         # active network is now preview
-npm run network                 # prints current active network
-npm run network undeployed      # switch back to local devnet
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Wallet as Agent wallet
+    participant API as Weather API
+    Agent->>API: GET /api/weather?city=Mumbai
+    API-->>Agent: 402 Payment Required
+    Agent->>Wallet: Sign payment message
+    Wallet-->>Agent: Payment signature
+    Agent->>API: Retry with X-PAYMENT header
+    API->>API: Verify signature
+    API-->>Agent: 200 OK + weather data
 ```
 
-### How wallets work across networks
+## 6. Environment Variables
 
-- `undeployed` uses a hardcoded genesis seed. Local devnet pre-funds it.
-- `preview` and `preprod` generate a fresh wallet on first use: a 24-word
-  BIP-39 recovery phrase (printed once) plus its derived seed, both stored
-  in `.midnight-state.json` (gitignored). The wallet survives switching
-  networks — switch back later and your funded wallet returns.
-- **Back up your recovery phrase** if you fund a public-network wallet you
-  care about. It is printed when the wallet is created and kept in
-  `.midnight-state.json` under `wallets.<network>.mnemonic`. Anyone holding
-  the phrase controls the wallet.
-- Wallets created before mnemonic support keep working from their stored
-  `seed`; they just have no phrase to import into Lace.
+| Variable | Required | Description |
+| --- | :---: | --- |
+| `GEMINI_API_KEY` | Yes | API key used to access Google Gemini. |
+| `GEMINI_MODEL` | No | Preferred Gemini model. Defaults to `gemini-flash-lite-latest`; automatic fallback remains enabled. |
+| `WALLET_PRIVATE_KEY` | No | Existing test wallet private key: `0x` + 64 hexadecimal characters. Use a **test** wallet only. |
 
-### Using the same wallet as Lace
+On hosted platforms with a read-only filesystem, set `WALLET_PRIVATE_KEY` so the wallet survives redeploys and cold starts.
 
-Seeds are derived with the standard BIP-39 `mnemonicToSeed` step — the same
-convention Lace uses — so identity is portable in both directions:
-
-- **Bring your Lace wallet here**: pass your recovery phrase via the
-  `MIDNIGHT_WALLET_MNEMONIC` env var — the derived addresses match Lace.
-  To keep the phrase out of your shell history, enter it with a hidden
-  prompt instead of typing it inline:
-
-  ```bash
-  read -s MIDNIGHT_WALLET_MNEMONIC && export MIDNIGHT_WALLET_MNEMONIC
-  npm run deploy
-  ```
-- **Take a scaffold wallet to Lace**: restore Lace from the 24-word phrase
-  in `.midnight-state.json`.
-
-### Funding a public-network wallet
-
-On the first run with `--network preview` (or `preprod`):
-
-1. `setup` will print your wallet address and the faucet URL.
-2. Open the faucet URL, paste the address, request tNIGHT.
-3. `setup` polls the wallet balance every 10 s and continues automatically
-   once funds arrive.
-4. The default poll budget is 10 minutes. Override with
-   `MIDNIGHT_FAUCET_TIMEOUT_MS=1800000` (30 min) for unattended runs.
-
-If the faucet is slow or the script times out, your seed is preserved.
-Re-run `npm run setup -- --network preview` once the funds land.
-
-### Environment overrides
-
-These env vars override the active network's config (no per-network
-suffix — they apply to whichever network is active for the run):
-
-| Variable | Effect |
-|---|---|
-| `MIDNIGHT_WALLET_SEED` | Use this hex seed (32-128 hex chars; a Lace-compatible BIP-39 seed is 128) instead of generating/persisting one. Useful for CI with a pre-funded wallet. |
-| `MIDNIGHT_WALLET_MNEMONIC` | Use this BIP-39 recovery phrase instead of generating a wallet — e.g. your Lace phrase, for the same addresses as Lace. Not persisted. Set only one of seed/mnemonic. |
-| `MIDNIGHT_INDEXER_URL` | Override the indexer GraphQL URL. |
-| `MIDNIGHT_INDEXER_WS_URL` | Override the indexer WS URL. |
-| `MIDNIGHT_NODE_URL` | Override the node RPC URL. |
-| `MIDNIGHT_FAUCET_URL` | Override the faucet URL printed during setup. |
-| `MIDNIGHT_PROOF_SERVER_URL` | Override the proof server URL — set to a public proof server (e.g. `https://lace-proof-pub.preview.midnight.network`) to skip running one locally. |
-| `MIDNIGHT_FAUCET_TIMEOUT_MS` | Faucet poll budget in milliseconds (default 600000 = 10 min). |
-
-By default all networks use the **local** proof server. Public proof
-servers exist (see the env override above) but the local default keeps
-your witness data on your machine and avoids depending on a remote
-service for the deploy hot path.
-
-### Switching back to local devnet
-
-```sh
-npm run network undeployed     # or: npm run setup -- --network undeployed
-```
-
-Your preview/preprod wallet seeds and deploy addresses stay in
-`.midnight-state.json`. Switch back later, and they're still there.
-
-### Wallet sync cache
-
-After each `deploy`, `cli`, or `check-balance` run, the scripts serialize the
-wallet's synced state to `.midnight-wallet-state/<network>/` (gitignored).
-The next run on the same network restores from that snapshot and only catches
-up to the latest block instead of replaying from genesis — meaningful on
-`preview` / `preprod` where a from-seed sync takes minutes.
-
-If the cache is stale or corrupt (e.g. after an SDK upgrade with an
-incompatible state format) the wallet falls back to a fresh from-seed sync
-with a one-line warning. `npm run clean` removes the cache along with other
-generated state.
-
-## Available scripts
-
-| Script                  | Description                                                    |
-| ----------------------- | -------------------------------------------------------------- |
-| `npm run setup`         | One-shot: start devnet, compile, deploy.                       |
-| `npm run compile`       | Compile the Compact contract.                                  |
-| `npm run deploy`        | Deploy the compiled contract (requires devnet up + compiled).  |
-| `npm run cli`           | Interactive CLI to call circuits on the deployed contract.     |
-| `npm run check-balance` | Print the genesis-seed wallet's NIGHT and DUST balances.       |
-| `npm run test:e2e`      | Smoke + read-back check against the deployed contract.         |
-| `npm run clean`         | Remove `contracts/managed/`, `.midnight-state.json`, and `.midnight-wallet-state/`. |
-| `npm run proof-server:start` / `:stop` | Compose lifecycle for just the proof-server service. |
-
-## Project structure
+## 7. Project Structure
 
 ```
-mn-demo/
-├── contracts/
-│   └── hello-world.compact     # Compact source
-├── scripts/
-│   └── e2e-check.ts            # smoke + read-back
-├── src/
-│   ├── network.ts              # network selection + state file management
-│   ├── wallet.ts               # wallet construction + sync-state cache
-│   ├── setup.ts                # orchestrator for `npm run setup`
-│   ├── deploy.ts               # deploy the contract
-│   ├── cli.ts                  # interact with deployed contract
-│   └── check-balance.ts        # NIGHT / DUST balance
-├── docker-compose.yml          # node + indexer + proof-server
-├── .midnight-state.json        # written by deploy (gitignored)
-├── .midnight-wallet-state/     # serialized sync state per network (gitignored)
-├── package.json
-└── tsconfig.json
+midnightL1/
+├── agent/
+│   ├── agent.ts        # Agent loop: Gemini calls, tool execution, model fallback
+│   ├── tools.ts        # Tool definitions (add your own tools here)
+│   └── wallet.ts       # Wallet creation, balances, x402 sign & verify
+├── app/
+│   ├── api/
+│   │   ├── agent/route.ts   # Chat endpoint running the agent loop
+│   │   └── weather/route.ts # Mock paid API (402 → verify payment → data)
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx             # Chat UI + Setup panel
+├── components/
+│   └── ui/                  # shadcn/ui primitives
+├── lib/
+│   └── utils.ts
+├── public/
+├── .env.example             # Template for environment variables
+├── next.config.ts
+└── package.json
 ```
 
-## Compact compiler version
+## 8. Future Improvements
 
-`.compact-version` at the create-mn-app repo root pinned the compiler
-version this project was scaffolded against. To upgrade your local
-compiler to that version:
+- **Real on-chain settlements** — submit x402 payments as actual USDC transactions on Base Sepolia instead of signature-only verification.
+- **Persistent chat history** — store conversations in a database (e.g. Postgres or SQLite) instead of keeping them in memory.
+- **Wallet persistence on serverless hosts** — replace the temp-folder fallback with encrypted key storage or a managed wallet service.
+- **More tools** — news lookup, web search, file handling, and calendar integrations.
+- **Streaming responses** — stream agent answers token-by-token for a faster feel.
+- **Multi-user support** — per-user wallets and rate limiting for public deployments.
+- **Agent observability** — a dashboard for tool-call latency, payment totals, and model fallbacks.
+- **Unit and integration tests** — cover the payment flow, wallet logic, and agent loop.
 
-```bash
-compact update <version>
-compact use <version>
-```
+## 9. Team Members
+
+| Name | Role | GitHub |
+| --- | --- | --- |
+| **Monika** | Developer | [@s-m-monika](https://github.com/s-m-monika) |
+
+## 10. Contributing
+
+Contributions are welcome!
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m "Add your feature"`
+4. Push the branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request describing your changes.
+
+Please keep PRs focused, follow the existing code style, and make sure `npm run build` passes before submitting.
+
+## 11. License
+
+This project is licensed under the [MIT License](LICENSE).
+
+Built on the [agentmaxxin starter kit](https://www.npmjs.com/package/agentmaxxin).
+
+Created by **[Monika](https://github.com/s-m-monika)** · [@s-m-monika](https://github.com/s-m-monika)
